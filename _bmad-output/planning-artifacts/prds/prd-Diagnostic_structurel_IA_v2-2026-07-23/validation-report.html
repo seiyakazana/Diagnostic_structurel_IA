@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: Diagnostic Structurel IA</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>PRD: Diagnostic Structurel IA — Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/prds/prd-Diagnostic_structurel_IA_v2-2026-07-23/prd.md</div>
+      </div>
+      <div class="grade grade-poor">Poor</div>
+    </header>
+
+    <div class="synthesis">
+      <p>This PRD holds up as the scope contract for its downstream chain: the thesis ("compress ~85% deskwork into a review-and-sign step; the AI proposes, the Expert disposes") is stated once and enforced everywhere — in Non-Goals, in FR-13's "No unvalidated Détection can appear in a Rapport", and in counter-metric SM-C1. Scope honesty and traceability are unusually clean (11/11 assumption roundtrip, contiguous FR-1–FR-24, every FR mapped to a UJ and SM). What's at risk is the tail of the pipeline it bets everything on: FR-18 (offline Rapport generation) is the most architecturally consequential FR and ships with zero testable consequences, and the acceptance surface for AI detection outside fissures/corrosion is undefined — both will surface as ambiguity in story creation, exactly where this PRD is otherwise strongest.</p>
+      <p>The adversarial pass materially shifts the picture and drives the grade. Three findings landed critical: SM-3 is a precision-only, self-graded metric with no recall floor — a model that misses most désordres still passes (C-1); the &lt;5-second Validation target manufactures the rubber-stamping SM-C1 warns about, while no FR creates a legal audit trail distinguishing AI-drafted from Expert-authored Rapport text under décret 2025-814 (C-2); and the décret-mandated Rapport content — recent works, mesures conservatoires, prioritized works, further investigations — is collected by no FR, making the "compliant Rapport" structurally non-compliant (C-3). Six further high findings attack the FR-15 auto-mapping claim, the unquantified training corpus, unmeasured severity grading, the zero-security-NFR state of a `status: final` document, FR-18's provisional-artifact leak, and the "RGPD deferred entirely" position, which the training-data reuse of third-party building photos in v1 does not actually permit. The mechanical grading rule (any critical finding → Poor) sets the headline grade; read it as "structurally sound document, three contract-level holes to close," not as a rewrite order.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">Decision-readiness</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Substance over theater</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Strategic coherence</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Done-ness clarity</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Scope honesty</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Downstream usability</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+    </div>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Decision-readiness</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Decisions are stated as decisions, with what was given up named: bounding boxes over segmentation (FR-11, §7.2), no in-app signature (§6), RGPD deferred entirely with a hard gate ("This is a hard gate before any external user or commercial pilot", §7.2), and "No claimed AI moat" (§6) — a rare piece of self-honesty that removes a whole class of downstream overpromising. Open Questions (§10) are genuinely open, with owners and revisit triggers (Q3 "revisit at SM-7 gate", Q7 "at PRD sign-off"). The two <code>[NOTE FOR PM]</code> callouts sit at the real tensions (arrêté template absorption at FR-19; RGPD gate at §7.2), not at safe checkpoints.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">SM-1 date commitment precedes the timeline decision</h3>
+              <span class="finding-location">§8 SM-1 vs §10 Q7</span>
+            </header>
+            <div class="finding-note">SM-1 targets "~1.5 days … by end of 2026" while Q7 says timeline and budget are set only at PRD sign-off. A calendar-dated success metric before any timeline exists is a soft contradiction.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Phrase SM-1's gate relative to pilot missions completed ("within N pilot Missions") or explicitly mark the date provisional pending Q7.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Substance over theater</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Almost nothing here is furniture. The two personas are the two actual founders, honestly tagged, and they drive real requirements: Marc's "he wears gloves; one hand often holds a lamp" (UJ-1) is directly load-bearing for the §9 field-ergonomics NFRs (≤3 taps, ≥14pt, one-handed operation). NFRs carry product-specific bounds (200 ms local entry, 30 s sync, ≤3 taps) rather than "scalable/secure/reliable" boilerplate. The Vision (§1) could not be swapped into another PRD — it names Coupes, Schémas, and the 3.5-day baseline. Competitive claims in §2 are backed by the addendum's named-vendor research rather than asserted.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Ergonomics list mixes bounded and unbounded items</h3>
+              <span class="finding-location">§9 Field ergonomics</span>
+            </header>
+            <div class="finding-note">"Haptic feedback on important actions", "explicit icons", "dark mode" sit unbounded next to testable thresholds. Justified by the field context, but story creation will have to invent done-ness for them.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Mark these as UX-spec-owned qualities so the downstream UX workflow knows it owns their definition.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Strategic coherence</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>The PRD has one thesis and every feature group serves the single pipeline Relevé → Détection → Validation → Coupes → Rapport. Prioritization follows the thesis: SM-1 is explicitly "the near-term proof gate: <em>does it cut the founder's own deskwork in half, on real missions?</em>" — the right metric for a founders-first POC, not activity theater. Counter-metrics exist and are the correct ones: SM-C1 (rubber-stamp rate as automation-complacency red flag) and SM-C2 (compliance floor). MVP scope kind is a coherent problem-solving POC, and §3.2 Non-Users plus §6 keep it that way.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-23 exceeds what the POC thesis needs</h3>
+              <span class="finding-location">§5.7 FR-23</span>
+            </header>
+            <div class="finding-note">"Precision/recall/F1 per Désordre category, plus model version history and comparison, and receives performance-drift alerts" is MLOps machinery for a two-founder pilot with a manually exported dataset (FR-22) and unquantified retraining cadence (§10 Q5). Drift alerts are also undefined (no threshold, no baseline), so the FR fails done-ness too. Build effort here competes directly with the SM-1 proof gate.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Keep per-category precision from Validation outcomes as v1; defer version comparison and drift alerts to v2 or tag them <code>[NON-GOAL for MVP]</code>.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details open>
+        <summary>
+          <h2>Done-ness clarity</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>The strongest FRs are genuinely testable — FR-1, FR-5 (200 ms), FR-7 (30 s sync, force-close survival), FR-11 (&gt;75% precision), FR-13 (&lt;5 s per Détection, "No unvalidated Détection can appear in a Rapport") — and the cahier §9.x acceptance citations are consistently restated as consequences, as §0 promises. But coverage is uneven: 11 of 24 FRs carry no Consequences block (FR-3, FR-6, FR-8, FR-9, FR-10, FR-16, FR-18, FR-20, FR-21, FR-23, FR-24), and the gaps cluster on the Rapport tail and the drawing tools — the deskwork-elimination features the thesis rests on. Since this PRD sits chain-top above epics and stories, this is the dimension that will leak ambiguity downstream. (Section held open: this dimension carries the review's highest-impact rubric finding.)</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">FR-18 has zero testable consequences on the most complex behavior in the PRD</h3>
+              <span class="finding-location">§5.6 FR-18</span>
+            </header>
+            <div class="finding-note">"The on-device render assembles all locally captured data, and AI-derived content … integrates when the PDF is finalized at sync" defines two artifacts (offline render, sync-finalized PDF) without saying which is authoritative, whether the offline render is exportable/shareable via FR-20, or how the Expert knows a Rapport is provisional vs final. An engineer cannot know what "done" is; an architect must guess the sync semantics.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add consequences: the offline render is visibly marked provisional and cannot be shared via FR-20; the finalized PDF supersedes it; finalization occurs automatically at sync.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The "content floor" of two of the three Rapport templates is never specified</h3>
+              <span class="finding-location">§5.6 FR-17</span>
+            </header>
+            <div class="finding-note">The rapport de diagnostic complet is fully enumerated, but rapport de visite and fiche de désordre unitaire get only "their template's deliberately partial content floor", which is defined nowhere in PRD or addendum. Two of three v1 deliverables have no content spec.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Enumerate each template's minimum content in the addendum, or add a <code>[NOTE FOR PM]</code> delegating the floor to the UX/template spec.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">No acceptance bar for four of six Détection categories</h3>
+              <span class="finding-location">§5.4 FR-11, §8 SM-3</span>
+            </header>
+            <div class="finding-note">Precision &gt;75% applies to fissures and corrosion only (per cahier §9.2), but FR-11 requires classification "into the six categories and their sub-disorders". Whether v1 ships if humidité/déformations/maçonnerie/dégradations detection is poor is unstated.</div>
+            <div class="finding-fix"><strong>Fix:</strong> State explicitly that the other four categories are best-effort in v1 with no acceptance threshold, or set one.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-8 geolocation has no failure behavior in the exact setting UJ-1 describes</h3>
+              <span class="finding-location">§5.2 FR-8</span>
+            </header>
+            <div class="finding-note">"Each survey entry and photo is automatically stamped with geolocation" is unconditional, yet UJ-1's climax is a basement survey where GPS, like network, is unavailable. Does capture block, stamp last-known-fix, or stamp null?</div>
+            <div class="finding-fix"><strong>Fix:</strong> One consequence: when no fix is available, capture proceeds and the entry is stamped with last-known location flagged as approximate.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Drawing/annotation tools lack done criteria</h3>
+              <span class="finding-location">FR-10, FR-16</span>
+            </header>
+            <div class="finding-note">"Arrows, circles, and text" and "freehand strokes, geometric shapes, legends, and dimensions (cotations), with Bluetooth stylus support" enumerate capabilities but define no verifiable outcome.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add one round-trip consequence tying annotations/Schémas to their legible appearance in the exported PDF.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Scope honesty</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>This is the PRD's best dimension. §6 Non-Goals does real work — each entry closes a door someone would otherwise assume open ("No ouvrages d'art … including as a form option"; "No signature. … No in-app signature, drawn or certificate-based"). §7.2 de-scopes explicitly rather than silently (segmentation masks, retraining pipeline, RGPD, integrations). Eleven <code>[ASSUMPTION]</code> tags mark genuine inferences (200 ms threshold, bounding boxes, secure-link mechanism) and all are indexed. Open-items density is well matched to POC stakes: seven Open Questions, all with owners or triggers, none rhetorical. The Cahier-truncation problem (§10 Q1) is disclosed rather than papered over.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Security/auth expectations for the POC are silent</h3>
+              <span class="finding-location">§9</span>
+            </header>
+            <div class="finding-note">RGPD deferral is honestly gated, but nothing states even the POC-level bar: authentication exists (UJ-1 entry state assumes it; FR-24 enforces roles) yet there is no line on credential handling or data-at-rest for photos of third parties' buildings. Defensible for a founders-only pilot, but it should be an explicit deferral, not an absence. (The adversarial review escalates this same gap to high — see H-4.)</div>
+            <div class="finding-fix"><strong>Fix:</strong> One NFR line or a §6/§7.2 entry stating the POC security floor and deferring the rest with the RGPD gate.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Downstream usability</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>This is a chain-top PRD and it behaves like one. The Glossary (§4) is prescriptive ("Downstream workflows must use these terms exactly"), keeps French domain vocabulary native, and is used consistently — Détection vs Désordre vs Fiche de désordre never blur, which is the drift that would hurt most. Every FR names the UJ it realizes; every SM names the FRs it validates and the cross-references resolve. Sections extract cleanly: the taxonomy lives once in the Glossary/addendum and is cited, not restated. UJs each carry a named protagonist with context inline.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">User documentation has no FR</h3>
+              <span class="finding-location">§7.1, §8 SM-6</span>
+            </header>
+            <div class="finding-note">Documentation is an MVP deliverable ("sufficient for a new Expert to be productive in under one hour") and SM-6's entire subject, but SM-6 "Validates FR-4, FR-13", neither of which produces documentation. Epic/story generation driven off FRs will drop this deliverable.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a small FR under §5.8 or an explicit deliverable line the epics workflow is told to pick up.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>The shape matches the product: a chain-top POC for two founders, one of whom is the practicing target user. Three UJs is the right count — UJ-1 and UJ-2 are the two halves of the thesis and are written at full journey depth; UJ-3 is deliberately one line, correctly refusing to inflate the back-office role into journey theater. Role modeling (§5.8) is justified rather than assumed. Brownfield concerns don't apply; regulatory traceability, which this shape does demand, is handled well (décret citations in FR-17 consequences, full depth pushed to the addendum). The only over-formalization pressure is at feature level (FR-23, already flagged under Strategic coherence), not document level. No findings.</p>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Adversarial review</h2>
+          <span class="reviewer-source">review-adversarial-general.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p><strong>Verdict:</strong> This PRD reads like a scope contract but behaves like a pitch. Its success metrics are self-graded homework, its flagship compliance claim (décret-compliant Rapport) is not backed by any FR that collects the décret-mandated content, and its central legal safety device (Expert Validation) is actively undermined by its own 5-second ergonomics target with no audit trail to show, in litigation, who wrote what. It cannot honestly carry <code>status: final</code> while its declared feature-detail authority is missing sections §4–8. (19 findings: 3 critical, 6 high, 7 medium, 3 low.)</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">C-1. SM-3 is a self-graded, precision-only, recall-blind vanity metric</h3>
+              <span class="finding-location">§8 SM-3; FR-11; addendum "AI cold start"</span>
+            </header>
+            <div class="finding-note">The 75% precision target is measured on a test set built from the founders' own seed corpus, labeled by the founding Expert — the same person who pilots the product, validates the outputs, and wants the venture to succeed. The person grading the model wrote the answer key. Worse: there is no recall target anywhere. A model that flags one obvious lézarde per building and nothing else achieves 100% precision and passes SM-3 while missing every désordre that matters. For a triage tool on potentially dangerous habitat-dégradé buildings, false negatives are the actual risk — the metric structure optimizes for exactly the wrong failure mode, and precision-only targets are trivially gameable by raising the confidence threshold.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add a recall (or miss-rate) floor per category alongside precision; require the test set to include held-out pilot-mission data not labeled by the model's own trainer (the second founder can blind-label a slice); freeze the test set before model tuning and version it.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">C-2. The 5-second Validation target manufactures rubber-stamping, and there is no legal audit trail</h3>
+              <span class="finding-location">FR-13; §8 SM-4; SM-C1; FR-14</span>
+            </header>
+            <div class="finding-note">The PRD's entire liability posture is "the Expert disposes and signs." Then FR-13/SM-4 set a target of processing each Détection — nature, localization, severity, plus reading AI-drafted cause hypotheses and recommendations — in under 5 seconds. Nobody critically evaluates a causal hypothesis in 5 seconds; that target is a KPI for rubber-stamping. SM-C1 acknowledges the risk and then does nothing: no threshold, no trigger, no defined action, no owner. Compounding it: FR-14 stores corrections as training data, not as a legal audit trail. Nothing requires the final Rapport (or its retained record) to distinguish AI-drafted text the Expert accepted verbatim from text the Expert authored. Post décret 2025-814, when a validated-in-4-seconds "hypothèse d'origine" turns out wrong and a building fails, the engineer's insurer and opposing counsel will ask exactly that question, and the product will have no answer.</div>
+            <div class="finding-fix"><strong>Fix:</strong> (a) Restrict the &lt;5s target to accept/reject of detections; give cause/recommendation text its own review affordance with no speed KPI. (b) Give SM-C1 a numeric floor and an owner. (c) Add an FR: immutable per-Rapport provenance record — which content was AI-drafted, what the Expert changed, timestamps — retained with the Mission.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">C-3. The "compliant Rapport" is built from data no feature collects</h3>
+              <span class="finding-location">FR-17; §5.2 FR-4/FR-5; SM-C2</span>
+            </header>
+            <div class="finding-note">The addendum lists the décret-mandated report contents: recent works and their stability impact, recommended further investigations, mesures conservatoires, prioritized works. Now search the FRs: the Relevé form (FR-4/FR-5) captures observations per Zone/Élément; FR-12 drafts "preliminary surveillance/intervention recommendations"; nothing anywhere collects recent-works history, produces a mesures-conservatoires section, or supports prioritizing works. FR-17's testable consequence only checks the credentials/insurance block and layout. SM-C2 declares regulatory completeness "a floor" — but the FRs never build the floor. The payoff feature ships structurally non-compliant while the PRD congratulates itself on compliance.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Either add FRs (or extend FR-4/FR-17) covering every décret-mandated content block — recent works capture in the Mission/Relevé, mesures conservatoires and prioritized-works sections in the Rapport — or amend §6/§7 to state explicitly that v1 Rapports are not décret-compliant deliverables and the compliance claim in §2/§8 is aspirational.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-1. FR-15 "automatic mapping onto the Coupe" hand-waves an unsolved spatial problem</h3>
+              <span class="finding-location">FR-15; UJ-2</span>
+            </header>
+            <div class="finding-note">"Numbered survey points map automatically onto the selected Coupe" — onto a generic library drawing of "mur" or "plancher". Automatic mapping requires knowing where on the section each désordre sits. No FR captures positional input beyond GPS (useless indoors and on a vertical section) and Zone/Élément (far too coarse). The one testable consequence quietly retreats to numbering consistency — an admission that "automatic mapping" is really "the Expert drags points manually and the numbers match." A hidden dependency on a building spatial model that no FR creates.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Rewrite FR-15 honestly: Expert positions désordres manually on the Coupe; the system guarantees numbering and cross-reference consistency. If genuine auto-placement is intended, add the FR that captures the positional data enabling it.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-2. The v1 model's existence rests on an unquantified shoebox of photos</h3>
+              <span class="finding-location">§5.7; addendum "AI cold start"; SM-3; FR-11</span>
+            </header>
+            <div class="finding-note">FR-11 requires a working six-category, ~24-sub-disorder classifier at v1. The training data is "own site photos, past reports, worked examples" — no count, no per-category coverage estimate, no labeling-effort budget, no minimum-dataset gate before FR-11 is deemed feasible. If the corpus yields 40 usable examples of "flambement," the model is fiction for that class and SM-3 is unfalsifiable noise. The addendum's own benchmark note admits cross-device/lighting generalization is a hard open problem; a corpus from one engineer's phone maximizes that exact risk. This is the single biggest schedule/feasibility dependency in the product and it occupies one paragraph of optimism.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add an explicit gate: minimum labeled examples per category (and per capture device/condition) before FR-11 acceptance testing; define fallback scope (e.g. v1 detects fissuration + corrosion only) if the corpus falls short. Say out loud that the other four categories have no accuracy commitment.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-3. v1 commits to Sévérité grading and cause inference — the two things the addendum says don't work</h3>
+              <span class="finding-location">FR-11; FR-12; addendum final bullet</span>
+            </header>
+            <div class="finding-note">The PRD's own addendum flags severity grading and cause inference as beyond the current state of the art, then FR-11 ships AI severity on a four-level scale with no accuracy threshold whatsoever (the 75% applies only to fissures/corrosion detection precision), and FR-12 ships cause hypotheses. An unmeasured severity output shown with an authoritative-looking percentage confidence score is an anchoring machine: the Expert sees "sévère — 82%" and the 5-second workflow does the rest. The structural-vs-cosmetic distinction — the one classification that actually matters for an R0/R1 mission — has no dedicated metric at all.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Either add a severity-agreement metric (AI grade vs Expert-corrected grade, per category) with a floor, or demote v1 severity to a default the Expert must actively set. State explicitly that Score de confiance applies to detection, not to severity or causes, and require the UI to reflect that.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-4. `status: final` on a PRD whose feature-detail authority is missing its technical, security, and planning sections</h3>
+              <span class="finding-location">Front matter; §0; §10 Q1</span>
+            </header>
+            <div class="finding-note">The Cahier des Charges — declared "feature-detail authority" — is truncated: §4–8 (presumed technical requirements, security, planning) are unavailable, and the PRD marks this Open Question #1 while stamping itself final. Consequence visible in the document: there are zero security NFRs. No authentication requirements, no at-rest encryption for a phone full of geolocated photos of possibly dangerous occupied buildings, no requirement on FR-20's "secure link" beyond an assumption tag, no device-loss story. These photos are potential evidence in insurance and habitat-dégradé proceedings; "POC, founders only" does not make a stolen phone less lost.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Downgrade status to draft-pending-cahier, or add a minimal security NFR block (auth, at-rest encryption on device, link expiry + revocation for FR-20, retention) and declare the cahier §4–8 formally superseded rather than "presumed."</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-5. FR-18 offline Rapport generation quietly breaks the "nothing unvalidated in a Rapport" invariant</h3>
+              <span class="finding-location">FR-18; FR-13; FR-20</span>
+            </header>
+            <div class="finding-note">FR-18 lets the Expert render a Rapport offline, "mid-Mission on an in-progress Relevé," with AI content merged in "when the PDF is finalized at sync." So an offline artifact exists that looks like a Rapport, contains no validated Détections (or pre-validation data), and FR-20's export/email/share has no stated guard preventing that artifact from leaving the device. FR-13's proud consequence — "no unvalidated Détection can appear in a Rapport" — is silent on the inverse: a Rapport with the AI layer absent and no marking that it is provisional. It also implies two render paths (on-device + post-sync merge) for a pixel-stable paginated PDF — a hidden architecture cost tossed off in one sentence.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define the offline artifact's status explicitly (watermarked "PROVISOIRE — non finalisé", excluded from FR-20 sharing until finalized), and add a testable consequence to FR-18. Flag the dual-render cost to architecture instead of letting them discover it.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">H-6. "RGPD deferred entirely" is not the founders' decision to make</h3>
+              <span class="finding-location">§7.2; §10 Q3; FR-8, FR-14, FR-21</span>
+            </header>
+            <div class="finding-note">The deferral rationale is "the POC runs exclusively on the founders' own Missions." The Missions are the founders'; the data is not. The photos capture third parties' property — occupied collective housing — stamped with GPS coordinates (FR-8), stored in a structured database by address (FR-21), and reused as AI training data (FR-14) starting in v1, not v2. The data subjects (owners, syndics, occupants whose interiors/belongings appear in basement and stairwell photos) never consented to training reuse. GDPR does not have a "we're a POC" exemption; the founders' client contracts may not even permit this secondary use. The training-loop reuse happens now, so the obligation is now.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Keep the machinery deferral, but replace "deferred entirely" with a v1 minimum: a data-basis note in the founders' mission engagement letters covering photo capture and training reuse, geolocation precision reduced or stripped from training exports, and no personal data (faces, plates, interiors identifying occupants) in the retraining dataset (FR-22 filter).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-1. SM-1 is unfalsifiable as written</h3>
+              <span class="finding-location">§8 SM-1</span>
+            </header>
+            <div class="finding-note">"Drops from ~3.5 days toward ~1.5 days" — "toward" is not a threshold; 3.4 days qualifies. Measured on n=2 users who are the product's owners, with no baseline measurement protocol, self-timed, and confounded by ordinary learning effects. The "proof gate" question ("does it cut deskwork in half?") is better, but it's phrased as a rhetorical aside, not the metric.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Make the gate the metric: deskwork hours per Mission ≤50% of a documented pre-tool baseline, over N ≥ 5 real Missions, with a defined time-logging method. Same treatment for SM-2's "≥30%".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-2. SM-6 cannot be tested by anyone who exists in v1</h3>
+              <span class="finding-location">§8 SM-6; §7.1; §3.2</span>
+            </header>
+            <div class="finding-note">"A new Expert is productive in under one hour using only the documentation." §3.2 explicitly excludes every human who is not a founder, and both founders built the product. There is no "new Expert" in the v1 universe; it's a v2 metric wearing a v1 badge.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Move SM-6 to the SM-7/commercialization gate, or define a proxy (a recruited non-user colleague under NDA performs a scripted cold-start session).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-3. FR-23's dashboard measures agreement with the Expert, calls it precision, on sample sizes that make drift alerts fiction</h3>
+              <span class="finding-location">FR-23; SM-C1</span>
+            </header>
+            <div class="finding-note">Precision/recall/F1 require ground truth; the only available truth source is Expert Validations — the very signal SM-C1 warns may collapse into rubber-stamping. So the dashboard measures Expert-agreement, and if complacency sets in, "precision" improves while real accuracy is unknown: the dashboard and the counter-metric feed on the same corrupted signal. Add "performance-drift alerts" computed over two users and a handful of missions per month, and you have statistically meaningless alarms.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Label dashboard metrics as validation-agreement, not precision; anchor true precision/recall to the frozen held-out test set (C-1 fix) per model version; drop drift alerting from v1 or define the minimum sample size at which it activates.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-4. Offline-first with multi-user editing and zero conflict semantics</h3>
+              <span class="finding-location">FR-1, FR-2, FR-7, SM-5; §9</span>
+            </header>
+            <div class="finding-note">"Zero data loss" is specified five different ways; conflict resolution is specified nowhere. Two assigned Experts (FR-2 allows it; both founders on one Mission is the realistic pilot case) edit the same Relevé, or a Mission is created offline on mobile while the Chef de projet edits it in the back-office. Last-write-wins? Merge? Duplicate Missions on address collision (FR-3 matches by address)? "Zero data loss" without merge semantics can mean "both versions kept, Rapport built from the wrong one."</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add an NFR or FR-7 consequence defining conflict policy at minimum granularity, and state whether concurrent Relevé editing by two Experts is supported or serialized in v1.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-5. Détection/FR-12 pipeline ambiguity: where do causes and recommendations actually attach?</h3>
+              <span class="finding-location">§4 Glossary; FR-11 vs FR-12; FR-18</span>
+            </header>
+            <div class="finding-note">The Glossary defines a Détection as carrying cause hypotheses and recommendations; FR-11 (CV output) doesn't produce them; FR-12 generates them "over the Détection + Relevé context" — i.e., after detection, dependent on Relevé completeness. So: are causes generated per-photo at analysis time, or per-Désordre after the Relevé closes? Can a Détection exist awaiting its FR-12 text? What does the Expert validate in &lt;5s — with or without the draft text? Architecture will trip on this within the first week.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Split the Glossary entry (Détection = CV output; drafted text = separate, later-bound artifact on the Fiche de désordre), and state the pipeline ordering explicitly in §5.4.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-6. No failure-mode requirements for the AI pipeline the whole workflow depends on</h3>
+              <span class="finding-location">§5.4; UJ-2; §9</span>
+            </header>
+            <div class="finding-note">UJ-2 assumes the synced Relevé "has been processed" by next morning — an implicit analysis SLA that appears nowhere as a requirement. No FR covers: AI service down or backlogged at sync; a photo that yields zero Détections (indistinguishable from "not yet analyzed"?); partial analysis; low-confidence behavior. For a product whose pitch is "next morning it's drafted," analysis latency and failure UX are requirements, not implementation details.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Add FR/NFR: analysis-completion target after sync, visible per-photo analysis status (pending / done / failed / no findings), defined behavior on AI-service unavailability, and a stated confidence-display/threshold policy.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">M-7. SM-7 is the softest gate that has ever gated anything</h3>
+              <span class="finding-location">§8 SM-7</span>
+            </header>
+            <div class="finding-note">"A handful of target-segment experts express willingness to pay." Expressed willingness is the single most notoriously worthless signal in product validation — the addendum itself documents competitors charging real money ($99–109/mo), so the honest bar exists and is known. A commercialization decision hinging on polite conversation is not a gate, it's a formality.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Define the gate in behavior: N signed pilot agreements, prepaid pilots, or LOIs with pricing attached — anything where the expert gives something up.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-1. "5 most common smartphone models among the pilot Experts" — the pilot Experts are two people</h3>
+              <span class="finding-location">§7.1; §10 Q4</span>
+            </header>
+            <div class="finding-note">Two founders own, at most, two or three phones. "5 most common models" among them is arithmetic that doesn't parse; it's a phrase inherited from a multi-user cahier and pasted into a two-user POC.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "The pilot Experts' actual devices, plus N representative iOS/Android models chosen at architecture time."</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-2. Bluetooth stylus and external keyboard support is gold-plating for a two-user POC</h3>
+              <span class="finding-location">FR-16; §9 Platform NFR</span>
+            </header>
+            <div class="finding-note">Cross-platform Bluetooth stylus support (pressure? palm rejection? which protocols?) is a real engineering cost with no acceptance criterion, serving a sketch tool that UJ-2 uses once per mission. External keyboard support serves no journey in the document.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Downgrade to "finger-drawing required; stylus works as a generic touch input; dedicated stylus features deferred," and delete external keyboard from v1 unless a journey needs it.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">L-3. "Why now" overstates the whitespace its own addendum undercuts</h3>
+              <span class="finding-location">§2; addendum "Competitive landscape"</span>
+            </header>
+            <div class="finding-note">§2 says "no francophone-native, phone-photos-in / draft-report-out tool exists" — but the addendum shows T2D2 does phone-photos-in, report-out today at $99/mo, and the narrative-drafting gap is contradicted by Spectora's AI Comment Assist in the adjacent segment. The real, defensible gap is narrower: French pathology vocabulary + FR regulatory template. And that template (the arrêté) doesn't exist yet — the sharpest differentiator is a dependency on an unpublished government document (Q2).</div>
+            <div class="finding-fix"><strong>Fix:</strong> Tighten §2 to the defensible claim (francophone + décret-template alignment), and note in §10/FR-19 the contingency if the arrêté's template diverges structurally from the current Rapport model.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li><strong>Assumptions Index roundtrip: clean.</strong> 11 inline <code>[ASSUMPTION]</code> tags, 11 index entries in §11, all match. Minor: UJ-3's two inline tags are merged into one index line — harmless.</li>
+        <li><strong>ID continuity: clean.</strong> FR-1–FR-24 contiguous and unique; UJ-1–UJ-3; SM-1–SM-7 plus SM-C1/C2. All "Realizes UJ-x" and "Validates FR-x" cross-references resolve.</li>
+        <li>§5.8 (Roles) is the only feature group without a "Realizes UJ-x" tag — acceptable since roles are cross-cutting, but the epics workflow should not treat it as orphaned.</li>
+        <li>The "(cahier acceptance §9.x)" citation convention is applied consistently, and §0 discloses that the cited text survives only via the brief's addendum; downstream workflows should treat the brief addendum, not the cahier file, as the acceptance-text source.</li>
+        <li>Glossary drift: none found; French terms keep consistent casing and accents throughout.</li>
+        <li>Title block still reads "<em>Working title — confirm.</em>" in a <code>status: final</code> document — trivially resolvable at sign-off.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .claude/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Generated: 2026-08-02T08:05:05Z</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

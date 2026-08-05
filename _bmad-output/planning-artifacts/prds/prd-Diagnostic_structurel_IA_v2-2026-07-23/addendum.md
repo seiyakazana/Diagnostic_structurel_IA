@@ -38,6 +38,14 @@ Sub-disorders per category; this table drives AI classification labels, survey d
 
 The founding Expert is both domain expert and data engineer: he assembles and labels the seed dataset himself from crown-jewel in-house inputs — own site photos, past reports, worked examples, norms/reference documents. This mitigates the cold-start risk behind SM-3; the dedicated test set is drawn from this corpus plus pilot-mission corrections (FR-14, FR-22).
 
+## Rapport template content floors (FR-17)
+
+Drafted by PM from each template's purpose; founders to confirm (tracked as an assumption in PRD §11).
+
+- **Rapport de visite** — lightweight site-visit record: cover page with credentials/insurance block; Ouvrage identity and visit date; per-Zone observation summary (checklist outcomes + free text); key annotated photos (Expert-selected); observed Désordres listed with Sévérité; no Coupes, no Fiches de désordre, no cause/recommendation blocks. Explicit statement that it is not a diagnostic.
+- **Fiche de désordre unitaire** — one validated Désordre as a standalone deliverable: credentials/insurance block; Ouvrage identity; the full Fiche (description, annotated photos, localization, Sévérité, validated causes and recommendations); its Coupe extract if positioned; cross-reference to the parent Mission.
+- **Rapport de diagnostic complet** — fully enumerated in PRD FR-17, including every décret-mandated content block.
+
 ## Regulatory depth (décret n° 2025-814, 12 août 2025)
 
 **Who may sign:** the diagnosis must be signed by an independent Bac+5 construction/GC engineer with ≥2 years' experience, carrying RC Pro ≥ €1M per claim / €1.5M per year; a DTG (copropriété) requires a Bac+3 qualified diagnostician with RC Pro. Consequence: **AI can never sign; a named human engineer bears liability** — and the Rapport must carry the credentials/insurance block (FR-17).
